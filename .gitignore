@@ -1,0 +1,7 @@
+venv/
+data/
+train/
+test/
+.venv/
+.vscode/
+.DS_Store
