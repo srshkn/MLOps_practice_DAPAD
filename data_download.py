@@ -1,12 +1,8 @@
 import kagglehub
 from pathlib import Path
-from pathlib import Path
 from sklearn.model_selection import train_test_split
 import shutil
 
-save_dir = Path("./data/")
-train_dir = Path("./train")
-test_dir = Path("./test")
 
 pokemons_dataset_name = "unexpectedscepticism/11945-pokemon-from-first-gen"
 
@@ -39,10 +35,13 @@ def copy_files(file_list, target_root):
         shutil.copy(file, target_dir / file.name)
 
 
-def prepare_pokemons(save_dir: Path):
+def prepare_pokemons(save_dir = Path("./data/"), train_dir = Path("./train"), test_dir = Path("./test")):
     download_pokemons(save_dir)
     source_dir = save_dir / "PokemonData"
     files, labels = collect(source_dir)
     train_files, test_files = train_test_split(files, test_size=0.2, random_state=42, stratify=labels)
     copy_files(train_files, train_dir)
     copy_files(test_files, test_dir)
+
+if __name__ == "__main__":
+    prepare_pokemons()
