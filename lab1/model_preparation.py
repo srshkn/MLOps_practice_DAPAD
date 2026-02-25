@@ -15,9 +15,10 @@ from fastai.vision.all import (
     parent_label,
 )
 
+# Путь к данным для датасета
 path = Path(__file__).resolve().parent.parent / "train"
 
-
+# Настройка датасета
 data_block = DataBlock(
     blocks=(ImageBlock, CategoryBlock),
     get_items=get_image_files,
@@ -27,9 +28,11 @@ data_block = DataBlock(
     batch_tfms=aug_transforms(size=128) + [Normalize.from_stats(*imagenet_stats)],
 )
 
+# Инициализируем датасет
 dls = data_block.dataloaders(path, bs=32)
 
 
+# Создаем модель для классификации изображения
 class SimpleCNN(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -59,19 +62,21 @@ class SimpleCNN(nn.Module):
         return x
 
 
+# Инициализируем модель
 model = SimpleCNN(num_classes=dls.c)
 
-
+# Настройка устройства (GPU/CPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
+# Настройка оптимизации модели
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 epochs = 10
 best_acc = 0.0
 
+# Цикл обучения
 for epoch in range(epochs):
-    # ---- TRAIN ----
     model.train()
     train_loss = 0
     correct = 0
@@ -100,6 +105,7 @@ for epoch in range(epochs):
 
 print("Training finished!")
 
+# Сохраняем модель в файл
 torch.save(model.state_dict(), "model.pth")
 
 print("Model saved to model.pkl")
