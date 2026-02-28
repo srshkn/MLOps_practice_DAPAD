@@ -16,7 +16,7 @@ from fastai.vision.all import (
 )
 
 # Путь к данным для датасета
-path = Path(__file__).resolve().parent.parent / "train"
+path = Path(__file__).parent.resolve()
 
 # Настройка датасета
 data_block = DataBlock(
@@ -83,17 +83,22 @@ for epoch in range(epochs):
     total = 0
 
     for xb, yb in dls.train:
-        xb, yb = xb.to(device), yb.to(device)
+        xb_clean = xb.as_subclass(torch.Tensor)
+        yb_clean = yb.as_subclass(torch.Tensor).long()
+
+        xb_clean, yb_clean = xb_clean.to(device), yb_clean.to(device)
+
         optimizer.zero_grad()
-        preds = model(xb)
-        loss = criterion(preds, yb)
+
+        preds = model(xb_clean)
+        loss = criterion(preds, yb_clean)
         loss.backward()
         optimizer.step()
 
-        train_loss += loss.item() * xb.size(0)
+        train_loss += loss.item() * xb_clean.size(0)
         _, predicted = preds.max(1)
-        correct += (predicted == yb).sum().item()
-        total += yb.size(0)
+        correct += (predicted == yb_clean).sum().item()
+        total += yb_clean.size(0)
 
     train_loss /= total
     train_acc = correct / total
