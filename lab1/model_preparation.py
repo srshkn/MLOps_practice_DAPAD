@@ -4,6 +4,7 @@ import torch.optim as optim
 from fastai.vision.all import (
     CategoryBlock,
     DataBlock,
+    DataLoaders,
     GrandparentSplitter,
     ImageBlock,
     Normalize,
@@ -15,24 +16,15 @@ from fastai.vision.all import (
     parent_label,
 )
 
-# Путь к данным для датасета
-path = Path(__file__).parent.resolve()
-
-# Настройка датасета
-data_block = DataBlock(
-    blocks=(ImageBlock, CategoryBlock),
-    get_items=get_image_files,
-    splitter=GrandparentSplitter(train_name="train", valid_name="test"),
-    get_y=parent_label,
-    item_tfms=Resize(128),
-    batch_tfms=aug_transforms(size=128) + [Normalize.from_stats(*imagenet_stats)],
-)
-
-# Инициализируем датасет
-dls = data_block.dataloaders(path, bs=32)
+# Конфигурация
+BATCH_SIZE = 32
+LEARNING_RATE = 0.001
+EPOCHS = 10
+MODEL_NAME = "model.pth"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-# Создаем модель для классификации изображения
+# Модель
 class SimpleCNN(nn.Module):
     def __init__(self, num_classes):
         super().__init__()
@@ -62,55 +54,75 @@ class SimpleCNN(nn.Module):
         return x
 
 
-# Инициализируем модель
-model = SimpleCNN(num_classes=dls.c)
-
-# Настройка устройства (GPU/CPU)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device)
-
-# Настройка оптимизации модели
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-epochs = 10
-best_acc = 0.0
-
-# Цикл обучения
-for epoch in range(epochs):
-    model.train()
-    train_loss = 0
-    correct = 0
-    total = 0
-
-    for xb, yb in dls.train:
-        xb_clean = xb.as_subclass(torch.Tensor)
-        yb_clean = yb.as_subclass(torch.Tensor).long()
-
-        xb_clean, yb_clean = xb_clean.to(device), yb_clean.to(device)
-
-        optimizer.zero_grad()
-
-        preds = model(xb_clean)
-        loss = criterion(preds, yb_clean)
-        loss.backward()
-        optimizer.step()
-
-        train_loss += loss.item() * xb_clean.size(0)
-        _, predicted = preds.max(1)
-        correct += (predicted == yb_clean).sum().item()
-        total += yb_clean.size(0)
-
-    train_loss /= total
-    train_acc = correct / total
-
-    print(
-        f"Epoch [{epoch + 1}/{epochs}] "
-        f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}"
+def get_dataloaders(path: str) -> DataLoaders:
+    data_block = DataBlock(
+        blocks=(ImageBlock, CategoryBlock),
+        get_items=get_image_files,
+        splitter=GrandparentSplitter(train_name="train", valid_name="test"),
+        get_y=parent_label,
+        item_tfms=Resize(128),
+        batch_tfms=aug_transforms(size=128) + [Normalize.from_stats(*imagenet_stats)],
     )
 
-print("Training finished!")
+    return data_block.dataloaders(path, bs=BATCH_SIZE)
 
-# Сохраняем модель в файл
-torch.save(model.state_dict(), "model.pth")
 
-print("Model saved to model.pkl")
+def train_model(model: SimpleCNN, dls: DataLoaders, epochs: int, lr: float):
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=lr)
+
+    for epoch in range(epochs):
+        model.train()
+        train_loss = 0
+        correct = 0
+        total = 0
+
+        for xb, yb in dls.train:
+            xb_clean = xb.as_subclass(torch.Tensor)
+            yb_clean = yb.as_subclass(torch.Tensor).long()
+
+            xb_clean, yb_clean = xb_clean.to(DEVICE), yb_clean.to(DEVICE)
+
+            optimizer.zero_grad()
+
+            preds = model(xb_clean)
+            loss = criterion(preds, yb_clean)
+            loss.backward()
+            optimizer.step()
+
+            train_loss += loss.item() * xb_clean.size(0)
+            _, predicted = preds.max(1)
+            correct += (predicted == yb_clean).sum().item()
+            total += yb_clean.size(0)
+
+        train_loss /= total
+        train_acc = correct / total
+
+        print(
+            f"Epoch [{epoch + 1}/{epochs}] "
+            f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}"
+        )
+
+    print("Training finished!")
+
+
+def main():
+    # Путь к данным для датасета
+    path = Path(__file__).parent.resolve()
+
+    # Инициализация датасета
+    dls = get_dataloaders(path)
+
+    # Инициализация модели
+    model = SimpleCNN(num_classes=dls.c).to(DEVICE)
+
+    # Обучение модели
+    train_model(model, dls, EPOCHS, LEARNING_RATE)
+
+    # Сохраняем модель в файл
+    torch.save(model.state_dict(), MODEL_NAME)
+    print(f"Model saved to {MODEL_NAME}")
+
+
+if __name__ == "__main__":
+    main()
