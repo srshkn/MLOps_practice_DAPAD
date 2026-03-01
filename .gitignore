@@ -1,5 +1,6 @@
 .venv/
 .vscode/
+.cursor/
 data/
 test/
 train/
