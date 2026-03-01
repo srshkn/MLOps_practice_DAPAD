@@ -1,3 +1,9 @@
+.venv/
+.vscode/
+.cursor/
+data/
+test/
+train/
 venv/
 data/
 train/
