@@ -2,69 +2,19 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from fastai.vision.all import (
-    CategoryBlock,
-    DataBlock,
     DataLoaders,
-    GrandparentSplitter,
-    ImageBlock,
-    Normalize,
     Path,
-    Resize,
-    aug_transforms,
-    get_image_files,
-    imagenet_stats,
-    parent_label,
 )
 
+from lab2.architecture import SimpleCNN
+from lab2.dataset import get_dataloaders
+
 # Конфигурация
-BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 EPOCHS = 10
 MODEL_NAME = "model.pth"
+SAVE_PATH = Path(__file__).resolve().parent / MODEL_NAME
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-# Модель
-class SimpleCNN(nn.Module):
-    def __init__(self, num_classes):
-        super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 32, 3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(64, 128, 3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.AdaptiveAvgPool2d(1),
-        )
-        self.fc = nn.Sequential(
-            nn.Linear(128, 128), nn.ReLU(), nn.Dropout(0.3), nn.Linear(128, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = torch.flatten(x, 1)
-        x = self.fc(x)
-        return x
-
-
-def get_dataloaders(path: str) -> DataLoaders:
-    data_block = DataBlock(
-        blocks=(ImageBlock, CategoryBlock),
-        get_items=get_image_files,
-        splitter=GrandparentSplitter(train_name="train", valid_name="test"),
-        get_y=parent_label,
-        item_tfms=Resize(128),
-        batch_tfms=aug_transforms(size=128) + [Normalize.from_stats(*imagenet_stats)],
-    )
-
-    return data_block.dataloaders(path, bs=BATCH_SIZE)
 
 
 def train_model(model: SimpleCNN, dls: DataLoaders, epochs: int, lr: float):
@@ -120,7 +70,7 @@ def main():
     train_model(model, dls, EPOCHS, LEARNING_RATE)
 
     # Сохраняем модель в файл
-    torch.save(model.state_dict(), MODEL_NAME)
+    torch.save(model.state_dict(), SAVE_PATH)
     print(f"Model saved to {MODEL_NAME}")
 
 

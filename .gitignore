@@ -1,13 +1,15 @@
-.venv/
+# Доп. приколы
 .vscode/
 .cursor/
-data/
-test/
-train/
-venv/
-data/
-train/
-test/
+
+# Изоляция 
 .venv/
-.vscode/
+venv/
+
+# Датасеты
+data/
+test/
+train/
+
+# Для пользователей macOS
 .DS_Store
