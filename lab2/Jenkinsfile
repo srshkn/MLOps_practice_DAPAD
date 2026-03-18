@@ -1,0 +1,85 @@
+pipeline {
+    agent any
+
+    environment {
+        WORKSPACE_DIR = "${WORKSPACE}"
+        LAB2_DIR = "${WORKSPACE_DIR}/lab2"
+        PYTHON_ENV = "${WORKSPACE_DIR}/venv"
+        // uv установит python в окружение, используем его
+        // PYTHON_BIN = "${PYTHON_ENV}/bin/python"
+        // Для Windows:
+        PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Укажите свои параметры git
+                git branch: 'lab2_auto_test',
+                    url: 'https://github.com/srshkn/MLOps_practice_DAPAD.git'
+            }
+        }
+
+        stage('Setup Python Environment with uv') {
+            steps {
+                script {
+                    sh '''
+                        # Устанавливаем uv, если его нет (через официальный скрипт)
+                        if ! command -v uv &> /dev/null; then
+                            echo "uv не найден, устанавливаю..."
+                            curl -LsSf https://astral.sh/uv/install.sh | sh
+                            # Добавляем uv в PATH для текущей сессии
+                            export PATH="$HOME/.cargo/bin:$PATH"
+                        fi
+                        # Создаём виртуальное окружение
+                        uv venv '"${PYTHON_ENV}"'
+                        # Устанавливаем зависимости
+                        uv pip install --python '"${PYTHON_BIN}"' -r '"${LAB2_DIR}/requirements.txt"'
+                    '''
+                }
+            }
+        }
+
+        stage('Data Creation') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} data_creation.py"
+            }
+        }
+
+        stage('Data Preprocessing') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} data_preprocessing.py"
+            }
+        }
+
+        stage('Train Model') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} fit.py"
+            }
+        }
+
+        stage('Test Model') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} model_testing.py"
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'lab2/*.pkl, lab2/*.json, lab2/*.csv', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo '✅ ML Pipeline completed successfully!'
+        }
+        failure {
+            echo '❌ ML Pipeline failed. Check logs for details.'
+        }
+    }
+}

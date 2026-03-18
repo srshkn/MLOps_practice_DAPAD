@@ -6,8 +6,8 @@ from fastai.vision.all import (
     Path,
 )
 
-from lab2.architecture import SimpleCNN
-from lab2.dataset import get_dataloaders
+from architecture import SimpleCNN
+from dataset import get_dataloaders
 
 # Конфигурация
 LEARNING_RATE = 0.001
@@ -58,7 +58,7 @@ def train_model(model: SimpleCNN, dls: DataLoaders, epochs: int, lr: float):
 
 def main():
     # Путь к данным для датасета
-    path = Path(__file__).parent.resolve()
+    path = Path(__file__).parent.parent.resolve()
 
     # Инициализация датасета
     dls = get_dataloaders(path)
