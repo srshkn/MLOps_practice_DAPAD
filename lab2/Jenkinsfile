@@ -11,15 +11,7 @@ pipeline {
         PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                // Укажите свои параметры git
-                git branch: 'lab2_test',
-                    url: 'https://github.com/srshkn/MLOps_practice_DAPAD.git'
-                    credentialsId: 'my'
-            }
-        }
+
 
         stage('Setup Python Environment with uv') {
             steps {
