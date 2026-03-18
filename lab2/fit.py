@@ -6,8 +6,8 @@ from fastai.vision.all import (
     Path,
 )
 
-from lab2.architecture import SimpleCNN
-from lab2.dataset import get_dataloaders
+from architecture import SimpleCNN
+from dataset import get_dataloaders
 
 # Конфигурация
 LEARNING_RATE = 0.001
