@@ -15,7 +15,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Укажите свои параметры git
-                git branch: 'lab2_auto_test',
+                git branch: 'lab2_test',
                     url: 'https://github.com/srshkn/MLOps_practice_DAPAD.git'
             }
         }
