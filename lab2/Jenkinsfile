@@ -17,6 +17,7 @@ pipeline {
                 // Укажите свои параметры git
                 git branch: 'lab2_test',
                     url: 'https://github.com/srshkn/MLOps_practice_DAPAD.git'
+                    credentialsId: 'my'
             }
         }
 
