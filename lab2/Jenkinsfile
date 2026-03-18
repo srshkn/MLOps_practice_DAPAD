@@ -11,6 +11,7 @@ pipeline {
         PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
     }
 
+    stages {
 
 
         stage('Setup Python Environment with uv') {
