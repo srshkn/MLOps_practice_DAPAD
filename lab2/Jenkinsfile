@@ -29,7 +29,7 @@ pipeline {
                         # Создаём виртуальное окружение
                         uv venv "${PYTHON_ENV}"
                         # Устанавливаем зависимости
-                        uv pip install --python "${PYTHON_BIN}" -r "${LAB2_DIR}/requirements.txt"
+                        uv pip install --python "${PYTHON_BIN}" -r "${WORKSPACE_DIR}/requirements.txt"
                     '''
                 }
             }
