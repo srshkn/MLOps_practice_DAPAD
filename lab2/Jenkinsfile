@@ -6,9 +6,9 @@ pipeline {
         LAB2_DIR = "${WORKSPACE_DIR}/lab2"
         PYTHON_ENV = "${WORKSPACE_DIR}/venv"
         // uv установит python в окружение, используем его
-        // PYTHON_BIN = "${PYTHON_ENV}/bin/python"
+        PYTHON_BIN = "${PYTHON_ENV}/bin/python"
         // Для Windows:
-        PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
+        // PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
     }
 
     stages {
