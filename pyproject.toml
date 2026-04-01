@@ -19,3 +19,8 @@ dependencies = [
     "torchaudio>=2.10.0",
     "torchvision>=0.25.0",
 ]
+
+
+[tool.uv.workspace]
+members = ["lab3"]
+exclude = ["lab3"]

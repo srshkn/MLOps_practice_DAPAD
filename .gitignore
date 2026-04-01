@@ -2,7 +2,13 @@
 .vscode/
 .cursor/
 
-# Изоляция 
+# Конфиденциальность
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.python-version
 .venv/
 venv/
 
