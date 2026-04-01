@@ -5,40 +5,10 @@ from PIL import Image
 import argparse
 from pathlib import Path
 import json
+import architecture
+import csv
 
-# ---------- Архитектура (та же) ----------
-class SimpleCNN(nn.Module):
-    def __init__(self, num_classes):
-        super().__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 32, 3, padding=1),
-            nn.BatchNorm2d(32),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(32, 64, 3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(64, 128, 3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.AdaptiveAvgPool2d(1),
-        )
-        self.fc = nn.Sequential(
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(128, num_classes)
-        )
 
-    def forward(self, x):
-        x = self.conv(x)
-        x = torch.flatten(x, 1)
-        x = self.fc(x)
-        return x
-
-# ---------- Классы (можно загрузить из JSON) ----------
 def get_class_names(classes_file=None):
     return sorted([
     'Abra', 'Aerodactyl', 'Alakazam', 'Arbok', 'Arcanine', 'Articuno',
@@ -70,14 +40,13 @@ def get_class_names(classes_file=None):
     'Zapdos', 'Zubat'
 ])
 
-# ---------- Тестер ----------
 class PokemonTester:
     def __init__(self, model_path, class_names, device=None):
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
         self.class_names = class_names
         self.num_classes = len(class_names)
 
-        self.model = SimpleCNN(num_classes=self.num_classes)
+        self.model = architecture.SimpleCNN(num_classes=self.num_classes)
         state_dict = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(state_dict)
         self.model.to(self.device)
@@ -92,7 +61,8 @@ class PokemonTester:
                                  std=[0.229, 0.224, 0.225])
         ])
 
-    def predict_image(self, image_path, top_k=1):
+    def predict_image(self, image_path):
+        """Возвращает предсказанный класс и вероятность."""
         img = Image.open(image_path).convert('RGB')
         img_tensor = self.transform(img).unsqueeze(0).to(self.device)
 
@@ -100,38 +70,86 @@ class PokemonTester:
             outputs = self.model(img_tensor)
             probs = torch.softmax(outputs, dim=1)[0]
 
-        top_probs, top_indices = torch.topk(probs, top_k)
-        results = [(self.class_names[idx.item()], prob.item()) for idx, prob in zip(top_indices, top_probs)]
-        return results
+        top_prob, top_idx = torch.max(probs, dim=0)
+        predicted_class = self.class_names[top_idx.item()]
+        confidence = top_prob.item()
+        return predicted_class, confidence
 
-    def predict_folder(self, folder_path, top_k=1):
-        folder = Path(folder_path)
-        image_paths = [p for p in folder.glob('*') if p.suffix.lower() in ('.jpg', '.jpeg', '.png')]
+
+
+def evaluate(test_dir, model_path, output_csv, output_json, classes_file=None):
+    """Основная функция тестирования."""
+    class_names = get_class_names(classes_file)
+    print(f"Загружено {len(class_names)} классов")
+
+    tester = PokemonTester(model_path, class_names)
+
+    test_dir = Path(test_dir)
+    if not test_dir.exists():
+        raise FileNotFoundError(f"Тестовая папка {test_dir} не найдена")
+
+    results = []  # каждый элемент: (image_path, true_class, pred_class, confidence)
+    correct = 0
+    total = 0
+
+    for class_dir in test_dir.iterdir():
+        if not class_dir.is_dir():
+            continue
+        true_class = class_dir.name
+        if true_class not in class_names:
+            print(f"Предупреждение: класс {true_class} не найден в списке, пропускаем")
+            continue
+
+        image_paths = list(class_dir.glob('*'))
         for img_path in image_paths:
+            if img_path.suffix.lower() not in ('.jpg', '.jpeg', '.png'):
+                continue
             try:
-                preds = self.predict_image(img_path, top_k)
-                print(f"{img_path.name}: {preds[0][0]} ({preds[0][1]:.4f})")
+                pred_class, confidence = tester.predict_image(img_path)
+                results.append({
+                    'image': str(img_path),
+                    'true_class': true_class,
+                    'pred_class': pred_class,
+                    'confidence': confidence
+                })
+                total += 1
+                if pred_class == true_class:
+                    correct += 1
             except Exception as e:
-                print(f"Ошибка {img_path.name}: {e}")
+                print(f"Ошибка при обработке {img_path}: {e}")
+
+    accuracy = correct / total if total > 0 else 0.0
+    print(f"Accuracy: {accuracy:.4f} ({correct}/{total})")
+
+    with open(output_csv, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['image', 'true_class', 'pred_class', 'confidence'])
+        writer.writeheader()
+        writer.writerows(results)
+
+    metrics = {
+        'accuracy': accuracy,
+        'correct': correct,
+        'total': total
+    }
+    with open(output_json, 'w') as f:
+        json.dump(metrics, f, indent=4)
+
+    print(f"Результаты сохранены в {output_csv} и {output_json}")
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model', default='model.pth')
-    parser.add_argument('--input', required=True)
-    parser.add_argument('--classes', help='JSON файл со списком классов')
-    parser.add_argument('--top_k', type=int, default=1)
+    parser = argparse.ArgumentParser(description='Тестирование модели покемонов')
+    parser.add_argument('--test_dir', default='test', help='Путь к папке с тестовыми данными (подпапки = классы)')
+    parser.add_argument('--model', default='model.pth', help='Путь к файлу модели')
+    parser.add_argument('--output_csv', default='predictions.csv', help='Выходной CSV файл')
+    parser.add_argument('--output_json', default='metrics.json', help='Выходной JSON файл')
+    parser.add_argument('--classes', help='JSON файл со списком классов (опционально)')
     args = parser.parse_args()
 
-    class_names = get_class_names(args.classes)
-    print(f"Загружено {len(class_names)} классов")
-    tester = PokemonTester(args.model, class_names)
-
-    input_path = Path(args.input)
-    if input_path.is_dir():
-        tester.predict_folder(input_path, args.top_k)
-    elif input_path.is_file():
-        preds = tester.predict_image(input_path, args.top_k)
-        for cls, prob in preds:
-            print(f"{cls}: {prob:.4f}")
-    else:
-        print("Путь не существует")
+    evaluate(
+        test_dir=args.test_dir,
+        model_path=args.model,
+        output_csv=args.output_csv,
+        output_json=args.output_json,
+        classes_file=args.classes
+    )

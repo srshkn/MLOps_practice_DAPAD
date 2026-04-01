@@ -1,0 +1,135 @@
+pipeline {
+    agent any
+
+    environment {
+        WORKSPACE_DIR = "${WORKSPACE}"
+        LAB2_DIR = "${WORKSPACE_DIR}/lab2"
+        PYTHON_ENV = "${WORKSPACE_DIR}/venv"
+        // uv установит python в окружение, используем его
+        PYTHON_BIN = "${PYTHON_ENV}/bin/python"
+        // Для Windows:
+        // PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
+    }
+
+    stages {
+        // На случай использования без CSM
+        // stage('Checkout') {
+        //     steps {
+        //         git branch: 'lab2_test',
+        //             url: 'https://github.com/srshkn/MLOps_practice_DAPAD.git',
+        //             credentialsId: 'test_credentialsId'
+        //     }
+        // }
+
+        stage('Setup Python Environment with uv') {
+            steps {
+                script {
+                    sh '''
+                        if ! command -v uv &> /dev/null; then
+                            echo "uv не найден, устанавливаю..."
+                            curl -LsSf https://astral.sh/uv/install.sh | sh
+                            # Добавляем правильный путь установки (uv кладётся в ~/.local/bin)
+                            export PATH="$HOME/.local/bin:$PATH"
+                        fi
+                        # Убедимся, что uv доступен
+                        uv --version
+                        # Создаём виртуальное окружение
+                        uv venv "${PYTHON_ENV}"
+                        # Устанавливаем зависимости
+                        uv pip install --python "${PYTHON_BIN}" -r "${WORKSPACE_DIR}/requirements.txt"
+                    '''
+                }
+            }
+        }
+
+        stage('Data Creation') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} data_creation.py"
+            }
+        }
+
+        stage('Data Preprocessing') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} data_preprocessing.py"
+            }
+        }
+
+        stage('Train Model') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} fit.py > fit.log 2>&1"
+            }
+        }
+
+        stage('Test Model') {
+            steps {
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} model_testing.py test.log 2>&1"
+            }
+        }
+
+        stage('Validate Metrics') {
+            steps {
+                script {
+                    def metrics = readJSON file: 'lab2/metrics.json'
+                    if (metrics.accuracy < 0.8) {
+                        currentBuild.result = 'UNSTABLE'
+                        error("Accuracy слишком низкая: ${metrics.accuracy}")
+                    }
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'lab2/*.pkl, lab2/*.json, lab2/*.csv', fingerprint: true
+            }
+        }
+        
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            script {
+                // Пушим в main при успехе
+                withCredentials([gitUsernamePassword(credentialsId: 'test_credentialsId')]) {
+                    sh '''
+                        git config user.email "jenkins@example.com"
+                        git config user.name "Jenkins CI"
+                        # Добавляем только нужные файлы (например, модель и отчёты)
+                        git add lab2/*.pkl lab2/*.json
+                        # Проверяем, есть ли изменения для коммита
+                        if ! git diff --cached --quiet; then
+                            git commit -m "Auto-commit successful build #${BUILD_NUMBER} [skip ci]"
+                            git push origin HEAD:main
+                        else
+                            echo "Нет изменений для коммита"
+                        fi
+                    '''
+                }
+            }
+            echo '✅ ML Pipeline completed successfully!'
+        }
+        failure {
+            script {
+                // При неудаче создаём отдельную ветку
+                withCredentials([gitUsernamePassword(credentialsId: 'test_credentialsId')]) {
+                    sh '''
+                        git config user.email "jenkins@example.com"
+                        git config user.name "Jenkins CI"
+                        git checkout -b debug-${BUILD_NUMBER}
+                        git add lab2/*.pkl lab2/*.json lab2/*.csv lab2/*.txt
+                        if ! git diff --cached --quiet; then
+                            git commit -m "Auto-commit failed build #${BUILD_NUMBER} [skip ci]"
+                            git push origin debug-${BUILD_NUMBER}
+                        else
+                            echo "Нет изменений для коммита"
+                        fi
+                    '''
+                }
+            }
+            echo '❌ ML Pipeline failed. Check logs for details.'
+        }
+    }
+}
