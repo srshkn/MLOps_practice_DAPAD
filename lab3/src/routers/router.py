@@ -1,14 +1,16 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from sqlmodel import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from src.database import get_session
-from src.models import Request
+from src.schemas import RequestResponse
 
-router_user = APIRouter()
+router = APIRouter()
 session = get_session()
 
 
-@router_user.post("/request", response_model=Request)
-async def request(db: Annotated[Session, Depends(get_session)]):
+@router.post("/forecast", response_model=RequestResponse)
+async def request(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> RequestResponse:
     pass

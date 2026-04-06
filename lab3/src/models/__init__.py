@@ -1,3 +1,3 @@
-from src.models.request import Request
+from .models import DataSet
 
-__all__ = ["Request"]
+__all__ = ["DataSet"]
