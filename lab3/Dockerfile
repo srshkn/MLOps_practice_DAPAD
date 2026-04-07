@@ -1,11 +1,9 @@
 FROM python:3.12-slim
 WORKDIR .
-COPY requirements.txt .
-RUN pip install --no-cache-dir uv
-RUN uv pip install --system -r requirements.txt
-
 COPY . .
+RUN pip install --no-cache-dir uv
+RUN uv sync
 
 EXPOSE 8000
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port 8000"]
