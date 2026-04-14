@@ -25,18 +25,33 @@ pipeline {
             steps {
                 script {
                     sh '''
+                        set -e
+
                         if ! command -v uv &> /dev/null; then
                             echo "uv не найден, устанавливаю..."
                             curl -LsSf https://astral.sh/uv/install.sh | sh
-                            # Добавляем правильный путь установки (uv кладётся в ~/.local/bin)
-                            export PATH="$HOME/.local/bin:$PATH"
                         fi
+
+                        # Добавляем типичный путь установки uv (на случай установки в ~/.local/bin)
+                        export PATH="$HOME/.local/bin:$PATH"
+
                         # Убедимся, что uv доступен
                         uv --version
+
+                        # Определяем, доступен ли CUDA-драйвер
+                        UV_EXTRA="cpu"
+                        if command -v nvidia-smi &> /dev/null && nvidia-smi > /dev/null 2>&1; then
+                            UV_EXTRA="cu128"
+                            echo "CUDA-драйвер найден, использую --extra ${UV_EXTRA}"
+                        else
+                            echo "CUDA недоступна или драйвер не установлен, использую --extra ${UV_EXTRA}"
+                        fi
+
                         # Создаём виртуальное окружение
                         uv venv "${PYTHON_ENV}"
-                        # Устанавливаем зависимости
-                        uv pip install --python "${PYTHON_BIN}" -r "${WORKSPACE_DIR}/requirements.txt"
+
+                        # Устанавливаем зависимости из pyproject.toml с нужным extra
+                        uv sync --project "${WORKSPACE_DIR}" --python "${PYTHON_BIN}" --extra "${UV_EXTRA}"
                     '''
                 }
             }
