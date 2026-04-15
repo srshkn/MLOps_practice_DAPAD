@@ -1,9 +1,14 @@
 from .schemas import APIModel
 
 
-class Request(APIModel):
-    pass
+class LoadDataRequest(APIModel):
+    csv_path: str | None = None # путь к CSV файлу
 
 
-class RequestResponse(APIModel):
-    request: Request
+class LoadDataResponse(APIModel):
+    loaded: int    # сколько записей загружено в raw_heart_disease
+
+
+class PreprocessResponse(APIModel):
+    train: int
+    test: int

@@ -1,3 +1,3 @@
-from .models import DataSet
+from .models import RawDataSet, FeatureDataSetTrain, FeatureDataSetTest
 
-__all__ = ["DataSet"]
+__all__ = ["RawDataSet", "FeatureDataSetTrain", "FeatureDataSetTest"]

@@ -29,7 +29,7 @@ class RestingECG(int, enum.Enum):
 
 
 # Exercise induced angina
-class ExerciseInducedAngina(bool, enum.Enum):
+class ExerciseInducedAngina(int, enum.Enum):
     yes = 1
     no = 0
 
@@ -64,86 +64,58 @@ class Target(int, enum.Enum):
 class RawDataSet(Base):
     __tablename__ = "raw_heart_disease"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     age: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
-    sex: Mapped[Sex] = mapped_column(
-        Enum(Sex, name="sex_enum", native_enum=True), nullable=True
-    )
-
-    cp: Mapped[ChestPainType] = mapped_column(
-        Enum(ChestPainType, name="cp_enum", native_enum=True), nullable=True
-    )
-
+    sex: Mapped[Sex] = mapped_column(Enum(Sex, name="sex_enum", native_enum=True), nullable=True)
+    cp: Mapped[ChestPainType] = mapped_column(Enum(ChestPainType, name="cp_enum", native_enum=True), nullable=True)
     trestbps: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     chol: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     fbs: Mapped[bool] = mapped_column(Boolean, nullable=True)
-
-    restecg: Mapped[RestingECG] = mapped_column(
-        Enum(RestingECG, name="restingecg_enum", native_enum=True), nullable=True
-    )
-
+    restecg: Mapped[RestingECG] = mapped_column(Enum(RestingECG, name="restingecg_enum", native_enum=True), nullable=True)
     thalach: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
-    exang: Mapped[ExerciseInducedAngina] = mapped_column(
-        Enum(ExerciseInducedAngina, name="eia_enum", native_enum=True), nullable=True
-    )
-
+    exang: Mapped[ExerciseInducedAngina] = mapped_column(Enum(ExerciseInducedAngina, name="eia_enum", native_enum=True), nullable=True)
     oldpeak: Mapped[float] = mapped_column(Float, nullable=True)
-
-    slope: Mapped[Slope] = mapped_column(
-        Enum(Slope, name="slope_enum", native_enum=True), nullable=True
-    )
-
-    ca: Mapped[CA] = mapped_column(
-        Enum(CA, name="ca_enum", native_enum=True), nullable=True
-    )
-
-    thal: Mapped[Thalassemia] = mapped_column(
-        Enum(Thalassemia, name="thalassemia_enum", native_enum=True), nullable=True
-    )
-
-    target: Mapped[Target] = mapped_column(
-        Enum(Target, name="target_enum", native_enum=True), nullable=True
-    )
+    slope: Mapped[Slope] = mapped_column(Enum(Slope, name="slope_enum", native_enum=True), nullable=True)
+    ca: Mapped[CA] = mapped_column(Enum(CA, name="ca_enum", native_enum=True), nullable=True)
+    thal: Mapped[Thalassemia] = mapped_column(Enum(Thalassemia, name="thalassemia_enum", native_enum=True), nullable=True)
+    target: Mapped[Target] = mapped_column(Enum(Target, name="target_enum", native_enum=True), nullable=True)
 
 
-class FeatureDataSet(Base):
-    __tablename__ = "feature_heart_disease"
+class FeatureDataSetTrain(Base):
+    __tablename__ = "feature_heart_disease_train"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
-
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     age: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     sex: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     cp: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     trestbps: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     chol: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     fbs: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     restecg: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     thalach: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     exang: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     oldpeak: Mapped[float] = mapped_column(Float, nullable=True)
-
     slope: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     ca: Mapped[int] = mapped_column(INTEGER, nullable=True)
-
     thal: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    target: Mapped[int] = mapped_column(INTEGER, nullable=True)
 
+
+class FeatureDataSetTest(Base):
+    __tablename__ = "feature_heart_disease_test"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    age: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    sex: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    cp: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    trestbps: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    chol: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    fbs: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    restecg: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    thalach: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    exang: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    oldpeak: Mapped[float] = mapped_column(Float, nullable=True)
+    slope: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    ca: Mapped[int] = mapped_column(INTEGER, nullable=True)
+    thal: Mapped[int] = mapped_column(INTEGER, nullable=True)
     target: Mapped[int] = mapped_column(INTEGER, nullable=True)
