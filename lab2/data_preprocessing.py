@@ -5,8 +5,8 @@ import albumentations as A
 import numpy as np
 
 # Пути к папкам
-train_dir = Path("./train")
-test_dir = Path("./test")
+DATASET_DIR = Path(__file__).resolve().parent / "dataset"
+train_dir = DATASET_DIR / "train"
 
 # Создаём последовательность аугментаций
 seq = A.Compose([
@@ -51,8 +51,7 @@ def preprocess_and_save(folder: Path):
 if __name__ == "__main__":
     print("🎉 Начало предобработки...")
 
-    # Запуск для обеих папок
+    # Тестовый набор не аугментируем, чтобы метрика оставалась честной.
     preprocess_and_save(train_dir)
-    preprocess_and_save(test_dir)
 
     print("\n🎉 Предобработка завершена!")
