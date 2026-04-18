@@ -1,26 +1,62 @@
 [project]
-name = "mlops-practice-dapad"
+name = "project"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12.0"
 dependencies = [
-    "albumentations>=2.0.8",
-    "fastai>=2.8.7",
-    "ipython>=9.10.0",
-    "kagglehub>=1.0.0",
-    "numpy>=2.4.2",
-    "opencv-python>=4.13.0.92",
-    "pillow>=12.1.1",
-    "pipreqs>=0.4.13",
-    "scikit-learn>=1.8.0",
-    "tensorflow>=2.20.0",
-    "torch>=2.10.0",
-    "torchaudio>=2.10.0",
-    "torchvision>=0.25.0",
+    "albumentations>=1.4.0",
 ]
-
 
 [tool.uv.workspace]
 members = ["lab3"]
 exclude = ["lab3"]
+
+[project.optional-dependencies]
+cpu = [
+  "fastai>=2.8.7",
+  "kagglehub>=1.0.0",
+  "opencv-python>=4.13.0.92",
+  "pillow>=12.1.1",
+  "pipreqs>=0.4.13",
+  "scikit-learn>=1.8.0",
+  "torch>=2.9.1",
+  "torchvision>=0.24.1",
+]
+cu128 = [
+  "fastai>=2.8.7",
+  "kagglehub>=1.0.0",
+  "opencv-python>=4.13.0.92",
+  "pillow>=12.1.1",
+  "pipreqs>=0.4.13",
+  "scikit-learn>=1.8.0",
+  "torch>=2.9.1",
+  "torchvision>=0.24.1",
+]
+
+
+[tool.uv]
+conflicts = [
+  [
+    { extra = "cpu" },
+    { extra = "cu128" },
+  ],
+]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+]
+torchvision = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
