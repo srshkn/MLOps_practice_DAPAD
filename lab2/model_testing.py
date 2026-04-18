@@ -8,6 +8,10 @@ import json
 import architecture
 import csv
 
+DATASET_DIR = Path(__file__).resolve().parent / 'dataset'
+DEFAULT_TEST_DIR = DATASET_DIR / 'test'
+DEFAULT_MODEL_PATH = Path(__file__).resolve().parent / 'model.pth'
+
 
 def get_class_names(classes_file=None):
     return sorted([
@@ -139,8 +143,8 @@ def evaluate(test_dir, model_path, output_csv, output_json, classes_file=None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Тестирование модели покемонов')
-    parser.add_argument('--test_dir', default='test', help='Путь к папке с тестовыми данными (подпапки = классы)')
-    parser.add_argument('--model', default='model.pth', help='Путь к файлу модели')
+    parser.add_argument('--test_dir', default=str(DEFAULT_TEST_DIR), help='Путь к папке с тестовыми данными (подпапки = классы)')
+    parser.add_argument('--model', default=str(DEFAULT_MODEL_PATH), help='Путь к файлу модели')
     parser.add_argument('--output_csv', default='predictions.csv', help='Выходной CSV файл')
     parser.add_argument('--output_json', default='metrics.json', help='Выходной JSON файл')
     parser.add_argument('--classes', help='JSON файл со списком классов (опционально)')

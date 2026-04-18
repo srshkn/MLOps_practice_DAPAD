@@ -4,9 +4,11 @@ pipeline {
     environment {
         WORKSPACE_DIR = "${WORKSPACE}"
         LAB2_DIR = "${WORKSPACE_DIR}/lab2"
+        DATASET_DIR = "${LAB2_DIR}/dataset"
         PYTHON_ENV = "${WORKSPACE_DIR}/venv"
         // uv установит python в окружение, используем его
         PYTHON_BIN = "${PYTHON_ENV}/bin/python"
+        DVC_REMOTE_NAME = 'storage'
         // Для Windows:
         // PYTHON_BIN = "${PYTHON_ENV}\\Scripts\\python"
     }
@@ -57,6 +59,33 @@ pipeline {
             }
         }
 
+        stage('Setup DVC') {
+            steps {
+                sh '''
+                    set -e
+                    export PATH="$HOME/.local/bin:$PATH"
+                    cd "${WORKSPACE_DIR}"
+
+                    if [ ! -d .dvc ]; then
+                        dvc init --subdir
+                    fi
+
+                    if [ -n "${DVC_REMOTE_URL:-}" ]; then
+                        dvc remote add -f -d "${DVC_REMOTE_NAME}" "${DVC_REMOTE_URL}"
+                    fi
+
+                    if [ -n "${DVC_S3_ENDPOINT_URL:-}" ]; then
+                        dvc remote modify "${DVC_REMOTE_NAME}" endpointurl "${DVC_S3_ENDPOINT_URL}"
+                    fi
+
+                    if ! dvc remote list | grep -q "^${DVC_REMOTE_NAME}[[:space:]]"; then
+                        echo "DVC remote '${DVC_REMOTE_NAME}' не настроен. Укажите DVC_REMOTE_URL в Jenkins environment."
+                        exit 1
+                    fi
+                '''
+            }
+        }
+
         stage('Data Creation') {
             steps {
                 sh "cd ${LAB2_DIR} && ${PYTHON_BIN} data_creation.py"
@@ -77,7 +106,7 @@ pipeline {
 
         stage('Test Model') {
             steps {
-                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} model_testing.py test.log 2>&1"
+                sh "cd ${LAB2_DIR} && ${PYTHON_BIN} model_testing.py > test.log 2>&1"
             }
         }
 
@@ -85,38 +114,53 @@ pipeline {
             steps {
                 script {
                     def metrics = readJSON file: 'lab2/metrics.json'
+                    env.METRICS_OK = metrics.accuracy >= 0.8 ? 'true' : 'false'
+
                     if (metrics.accuracy < 0.8) {
-                        currentBuild.result = 'UNSTABLE'
-                        error("Accuracy слишком низкая: ${metrics.accuracy}")
+                        unstable("Accuracy слишком низкая: ${metrics.accuracy}")
                     }
                 }
             }
         }
 
+        stage('Publish Dataset To DVC') {
+            when {
+                expression { env.METRICS_OK == 'true' }
+            }
+            steps {
+                sh '''
+                    set -e
+                    export PATH="$HOME/.local/bin:$PATH"
+                    cd "${WORKSPACE_DIR}"
+
+                    dvc add "${DATASET_DIR}"
+                    dvc push
+                '''
+            }
+        }
+
         stage('Archive Artifacts') {
             steps {
-                archiveArtifacts artifacts: 'lab2/*.pkl, lab2/*.json, lab2/*.csv', fingerprint: true
+                archiveArtifacts artifacts: 'lab2/*.pkl, lab2/*.json, lab2/*.csv, lab2/*.log', fingerprint: true
             }
         }
         
     }
 
     post {
-        always {
-            cleanWs()
-        }
         success {
             script {
                 // Пушим в main при успехе
                 withCredentials([gitUsernamePassword(credentialsId: 'test_credentialsId')]) {
                     sh '''
+                        set -e
                         git config user.email "jenkins@example.com"
                         git config user.name "Jenkins CI"
-                        # Добавляем только нужные файлы (например, модель и отчёты)
-                        git add lab2/*.pkl lab2/*.json
+                        # Коммитим артефакты модели и DVC-метаданные датасета
+                        git add .dvc .dvcignore lab2/*.pkl lab2/*.json lab2/*.csv lab2/*.log lab2/*.dvc
                         # Проверяем, есть ли изменения для коммита
                         if ! git diff --cached --quiet; then
-                            git commit -m "Auto-commit successful build #${BUILD_NUMBER} [skip ci]"
+                            git commit -m "Publish model and dataset metadata for build #${BUILD_NUMBER} [skip ci]"
                             git push origin HEAD:main
                         else
                             echo "Нет изменений для коммита"
@@ -126,17 +170,19 @@ pipeline {
             }
             echo '✅ ML Pipeline completed successfully!'
         }
-        failure {
+
+        unstable {
             script {
-                // При неудаче создаём отдельную ветку
+                // При плохих метриках сохраняем артефакты в отдельную debug-ветку
                 withCredentials([gitUsernamePassword(credentialsId: 'test_credentialsId')]) {
                     sh '''
+                        set -e
                         git config user.email "jenkins@example.com"
                         git config user.name "Jenkins CI"
-                        git checkout -b debug-${BUILD_NUMBER}
-                        git add lab2/*.pkl lab2/*.json lab2/*.csv lab2/*.txt
+                        git checkout -B debug-${BUILD_NUMBER}
+                        git add lab2/*.pkl lab2/*.json lab2/*.csv lab2/*.txt lab2/*.log
                         if ! git diff --cached --quiet; then
-                            git commit -m "Auto-commit failed build #${BUILD_NUMBER} [skip ci]"
+                            git commit -m "Preserve low-metric build #${BUILD_NUMBER} [skip ci]"
                             git push origin debug-${BUILD_NUMBER}
                         else
                             echo "Нет изменений для коммита"
@@ -144,7 +190,15 @@ pipeline {
                     '''
                 }
             }
+            echo '⚠️ Quality gate failed. Debug branch created.'
+        }
+
+        failure {
             echo '❌ ML Pipeline failed. Check logs for details.'
+        }
+
+        cleanup {
+            cleanWs()
         }
     }
 }

@@ -12,10 +12,8 @@ __pycache__/
 .venv/
 venv/
 
-# Датасеты
-data/
-test/
-train/
+# DVC cache
+.dvc/cache/
 
 # Для пользователей macOS
 .DS_Store

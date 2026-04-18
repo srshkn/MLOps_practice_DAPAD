@@ -5,11 +5,20 @@ import shutil
 
 
 pokemons_dataset_name = "unexpectedscepticism/11945-pokemon-from-first-gen"
+DATASET_DIR = Path(__file__).resolve().parent / "dataset"
+RAW_DIR = DATASET_DIR / "raw"
+TRAIN_DIR = DATASET_DIR / "train"
+TEST_DIR = DATASET_DIR / "test"
 
-def download_pokemons(save_dir):
-    save_dir = Path("./data")
-    if not(save_dir.exists()):
-        save_dir.mkdir()
+
+def reset_directory(path: Path):
+    if path.exists():
+        shutil.rmtree(path)
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def download_pokemons(save_dir: Path):
+    save_dir.mkdir(parents=True, exist_ok=True)
     return kagglehub.dataset_download(pokemons_dataset_name, output_dir=str(save_dir))
 
 
@@ -35,7 +44,13 @@ def copy_files(file_list, target_root):
         shutil.copy(file, target_dir / file.name)
 
 
-def prepare_pokemons(save_dir = Path("./data/"), train_dir = Path("./train"), test_dir = Path("./test")):
+def prepare_pokemons(
+    save_dir: Path = RAW_DIR,
+    train_dir: Path = TRAIN_DIR,
+    test_dir: Path = TEST_DIR,
+):
+    reset_directory(train_dir)
+    reset_directory(test_dir)
     download_pokemons(save_dir)
     source_dir = save_dir / "PokemonData"
     files, labels = collect(source_dir)
