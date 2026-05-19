@@ -28,6 +28,12 @@ services:
       - .env
     depends_on:
       - db
+  front:
+    build: ./front
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
