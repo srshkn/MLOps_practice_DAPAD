@@ -54,7 +54,7 @@ class SimpleCNN(nn.Module):
         return x
 
 
-def get_dataloaders(path: str) -> DataLoaders:
+def get_dataloaders(path: Path) -> DataLoaders:
     data_block = DataBlock(
         blocks=(ImageBlock, CategoryBlock),
         get_items=get_image_files,
