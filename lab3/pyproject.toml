@@ -1,16 +1,22 @@
 [project]
 name = "lab3"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "fastapi>=0.136.1",
-    "kagglehub>=1.0.1",
-    "pandas>=3.0.3",
-    "psycopg2-binary>=2.9.12",
-    "pydantic-settings>=2.14.1",
+    "fastapi>=0.135.2",
+    "greenlet>=3.3.2",
+    "kagglehub>=1.0.0",
+    "pandas>=3.0.2",
+    "psycopg[binary]>=3.3.3",
+    "pydantic-settings>=2.13.1",
     "scikit-learn>=1.8.0",
-    "sqlmodel>=0.0.38",
-    "uvicorn>=0.47.0",
+    "sqlmodel>=0.0.37",
+    "uvicorn>=0.42.0",
+    # ML dependencies for heart disease pipeline
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
+    "xgboost>=2.0.0",
+    "imbalanced-learn>=0.12.0",
+    "shap>=0.45.0",
+    "kaggle>=1.6.0",
 ]
