@@ -1,19 +1,22 @@
-# Доп. приколы
+# === GENERAL ===
+# IDE
 .vscode/
 .cursor/
+.idea/
 
-# Конфиденциальность
+# macOS
+.DS_Store
+
+# Security
 .env
 
 # Python
-__pycache__/
-*.py[cod]
-.python-version
+.pytest_cache
 .venv/
 venv/
+__pycache__
+*.py[cod]
+.ruff_cache
 
 # DVC cache
 .dvc/cache/
-
-# Для пользователей macOS
-.DS_Store
