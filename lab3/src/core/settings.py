@@ -1,27 +1,27 @@
 from functools import lru_cache
 
-from pydantic import PostgresDsn, computed_field
+from pydantic import Field, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # App
-    PROJECT_NAME: str
-    PROJECT_TITLE: str
-    PROJECT_DESCRIPTION: str
-    PROJECT_VERSION: str
+    PROJECT_NAME: str = Field(default=...)
+    PROJECT_TITLE: str = Field(default=...)
+    PROJECT_DESCRIPTION: str = Field(default=...)
+    PROJECT_VERSION: str = Field(default=...)
 
     # PostgreSQL
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_PORT: int
-    POSTGRES_DB: str
+    POSTGRES_SERVER: str = Field(default=...)
+    POSTGRES_USER: str = Field(default=...)
+    POSTGRES_PASSWORD: str = Field(default=...)
+    POSTGRES_PORT: int = Field(default=...)
+    POSTGRES_DB: str = Field(default=...)
 
     @computed_field
     @property
     def DB_URL(self) -> PostgresDsn:
-        return (
+        return PostgresDsn(
             f"postgresql+psycopg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
