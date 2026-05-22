@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
-from src.schemas import LoadDataRequest, LoadDataResponse, PreprocessResponse
 from src.datapreprocess import load_csv_to_raw, preprocess
+from src.schemas import LoadDataRequest, LoadDataResponse, PreprocessResponse
 
 router = APIRouter()
 
