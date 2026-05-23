@@ -4,6 +4,8 @@ version = "0.1.0"
 requires-python = ">=3.12.0"
 dependencies = [
     "albumentations>=1.4.0",
+    "fastapi[standard]>=0.136.1",
+    "streamlit>=1.57.0",
 ]
 
 [tool.uv.workspace]
